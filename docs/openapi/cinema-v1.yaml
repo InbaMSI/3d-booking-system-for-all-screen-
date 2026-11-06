@@ -1,0 +1,591 @@
+openapi: 3.0.3
+info:
+  title: Cinema Booking API
+  version: 1.0.0
+  description: Authoritative movie discovery, seat inventory, reservations, payment status, and tickets.
+servers:
+  - url: /api/v1
+paths:
+  /movies:
+    get:
+      operationId: listMovies
+      parameters:
+        - $ref: "#/components/parameters/Query"
+        - $ref: "#/components/parameters/City"
+        - $ref: "#/components/parameters/PageSize"
+        - $ref: "#/components/parameters/PageToken"
+      responses:
+        "200":
+          description: Movies
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Movie"
+                  nextPageToken:
+                    type: string
+                    nullable: true
+  /movies/{movieId}:
+    get:
+      operationId: getMovie
+      parameters:
+        - $ref: "#/components/parameters/MovieId"
+      responses:
+        "200":
+          description: Movie
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Movie"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /movies/{movieId}/shows:
+    get:
+      operationId: listMovieShows
+      parameters:
+        - $ref: "#/components/parameters/MovieId"
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/PageSize"
+        - $ref: "#/components/parameters/PageToken"
+      responses:
+        "200":
+          description: Showtimes
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Showtime"
+                  nextPageToken:
+                    type: string
+                    nullable: true
+  /cinemas:
+    get:
+      operationId: listCinemas
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+        - $ref: "#/components/parameters/City"
+        - $ref: "#/components/parameters/PageSize"
+        - $ref: "#/components/parameters/PageToken"
+      responses:
+        "200":
+          description: Cinema search results
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Cinema"
+                  nextPageToken:
+                    type: string
+                    nullable: true
+  /cinemas/{cinemaId}:
+    get:
+      operationId: getCinema
+      parameters:
+        - name: cinemaId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Cinema and auditorium
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cinema"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /cinemas/{cinemaId}/shows:
+    get:
+      operationId: listCinemaShows
+      parameters:
+        - name: cinemaId
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/PageSize"
+        - $ref: "#/components/parameters/PageToken"
+      responses:
+        "200":
+          description: Cinema showtimes
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Showtime"
+                  nextPageToken:
+                    type: string
+                    nullable: true
+  /shows/{showId}:
+    get:
+      operationId: getShow
+      parameters:
+        - $ref: "#/components/parameters/ShowId"
+      responses:
+        "200":
+          description: Showtime details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Showtime"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /shows/{showId}/seats:
+    get:
+      operationId: getShowSeats
+      parameters:
+        - $ref: "#/components/parameters/ShowId"
+      responses:
+        "200":
+          description: Seat inventory and auditorium geometry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SeatInventory"
+  /shows/{showId}/reservations:
+    post:
+      operationId: createReservation
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ShowId"
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [seatIds]
+              properties:
+                seatIds:
+                  type: array
+                  minItems: 1
+                  uniqueItems: true
+                  items:
+                    type: string
+      responses:
+        "201":
+          description: Server-created temporary reservation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reservation"
+        "409":
+          description: One or more seats are not available
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /bookings/{bookingId}:
+    get:
+      operationId: getBooking
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/BookingId"
+      responses:
+        "200":
+          description: Authoritative reservation and payment state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reservation"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /bookings/{bookingId}/payment-orders:
+    post:
+      operationId: createPaymentOrder
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/BookingId"
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        "201":
+          description: Provider handoff metadata; never proof of payment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentOrder"
+  /bookings/{bookingId}/payment-verifications:
+    post:
+      operationId: verifyPayment
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/BookingId"
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [providerPaymentId]
+              properties:
+                providerPaymentId:
+                  type: string
+                  description: Public provider identifier; never accepted as proof without server-side verification.
+      responses:
+        "200":
+          description: Authoritative status after server-side provider verification
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reservation"
+  /bookings/{bookingId}/cancellation-requests:
+    post:
+      operationId: requestCancellation
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/BookingId"
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  maxLength: 500
+      responses:
+        "200":
+          description: Backend-authorized cancellation state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reservation"
+        "409":
+          description: Cancellation is not permitted in the current state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+  /bookings/{bookingId}/refund-requests:
+    post:
+      operationId: requestRefund
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/BookingId"
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason:
+                  type: string
+                  minLength: 1
+                  maxLength: 500
+      responses:
+        "202":
+          description: Refund request accepted for backend policy evaluation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reservation"
+  /payments/webhooks/razorpay:
+    post:
+      operationId: receiveRazorpayWebhook
+      parameters:
+        - name: X-Razorpay-Signature
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        description: Preserve the raw request body for signature verification.
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        "204":
+          description: Signature verified and event processed idempotently
+        "400":
+          description: Invalid webhook signature or payload
+  /account/bookings:
+    get:
+      operationId: listAccountBookings
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Authenticated customer's bookings
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Reservation"
+  /bookings/{bookingId}/ticket:
+    get:
+      operationId: getTicket
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/BookingId"
+      responses:
+        "200":
+          description: Issued only after verified booking confirmation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ticket"
+        "409":
+          description: Ticket is not yet available
+components:
+  parameters:
+    Query:
+      name: q
+      in: query
+      required: false
+      schema:
+        type: string
+    City:
+      name: city
+      in: query
+      required: false
+      schema:
+        type: string
+    From:
+      name: from
+      in: query
+      required: false
+      schema:
+        type: string
+        format: date-time
+    To:
+      name: to
+      in: query
+      required: false
+      schema:
+        type: string
+        format: date-time
+    PageSize:
+      name: pageSize
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    PageToken:
+      name: pageToken
+      in: query
+      required: false
+      schema:
+        type: string
+    MovieId:
+      name: movieId
+      in: path
+      required: true
+      schema:
+        type: string
+    ShowId:
+      name: showId
+      in: path
+      required: true
+      schema:
+        type: string
+    BookingId:
+      name: bookingId
+      in: path
+      required: true
+      schema:
+        type: string
+  responses:
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+  schemas:
+    Movie:
+      type: object
+      required: [id, title, synopsis, runtimeMinutes, rating, genres, posterTone, trailerUrl]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        synopsis: { type: string }
+        runtimeMinutes: { type: integer }
+        rating: { type: string }
+        genres:
+          type: array
+          items: { type: string }
+        posterTone: { type: string }
+        trailerUrl:
+          type: string
+          nullable: true
+          format: uri
+    Showtime:
+      type: object
+      required: [id, movieId, cinemaId, cinemaName, auditoriumName, startsAt, priceFromMinor, currency]
+      properties:
+        id: { type: string }
+        movieId: { type: string }
+        cinemaId: { type: string }
+        cinemaName: { type: string }
+        auditoriumName: { type: string }
+        startsAt: { type: string, format: date-time }
+        priceFromMinor: { type: integer, minimum: 0 }
+        currency: { type: string, minLength: 3, maxLength: 3 }
+    Cinema:
+      type: object
+      required: [id, name, address, auditoriumName, assetUrl]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        address: { type: string }
+        auditoriumName: { type: string }
+        assetUrl:
+          type: string
+          nullable: true
+          format: uri
+    Seat:
+      type: object
+      required: [id, row, number, x, y, z, eyeHeight, priceMinor, category, availability]
+      properties:
+        id: { type: string }
+        row: { type: string }
+        number: { type: integer }
+        x: { type: number }
+        y: { type: number }
+        z: { type: number }
+        eyeHeight: { type: number }
+        priceMinor: { type: integer, minimum: 0 }
+        category: { type: string, enum: [standard, elite, lounger] }
+        availability: { type: string, enum: [available, held, booked] }
+    SeatInventory:
+      type: object
+      required: [showId, screen, seats]
+      properties:
+        showId: { type: string }
+        screen:
+          type: object
+          required: [center, width, height]
+          properties:
+            center:
+              type: array
+              minItems: 3
+              maxItems: 3
+              items: { type: number }
+            width: { type: number }
+            height: { type: number }
+        seats:
+          type: array
+          items: { $ref: "#/components/schemas/Seat" }
+    Reservation:
+      type: object
+      required: [id, showId, seatIds, amountMinor, currency, expiresAt, status, paymentStatus]
+      properties:
+        id: { type: string }
+        showId: { type: string }
+        seatIds:
+          type: array
+          items: { type: string }
+        amountMinor: { type: integer, minimum: 0 }
+        currency: { type: string, minLength: 3, maxLength: 3 }
+        expiresAt: { type: string, format: date-time }
+        status: { type: string, enum: [held, expired, confirmed, cancelled] }
+        paymentStatus: { type: string, enum: [not_started, pending, failed, paid] }
+    PaymentOrder:
+      type: object
+      required: [orderId, amountMinor, currency, provider]
+      properties:
+        orderId: { type: string }
+        amountMinor: { type: integer }
+        currency: { type: string }
+        provider: { type: string }
+        checkoutUrl:
+          type: string
+          nullable: true
+          format: uri
+    Ticket:
+      type: object
+      required: [id, bookingId, issuedAt, seatIds]
+      properties:
+        id: { type: string }
+        bookingId: { type: string }
+        issuedAt: { type: string, format: date-time }
+        seatIds:
+          type: array
+          items: { type: string }
+    ApiError:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        seatIds:
+          type: array
+          items: { type: string }
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+security: []

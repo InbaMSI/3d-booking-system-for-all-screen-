@@ -1,0 +1,47 @@
+{
+  "name": "@cinema/web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "e2e": "playwright test",
+    "api:types": "openapi-typescript ../../docs/openapi/cinema-v1.yaml -o src/lib/api/generated.ts"
+  },
+  "dependencies": {
+    "@heroui/react": "3.2.7",
+    "@react-three/drei": "10.7.9",
+    "@react-three/fiber": "9.8.2",
+    "better-sqlite3": "^12.11.1",
+    "next": "16.4.3",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "three": "0.187.0"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@playwright/test": "1.64.1",
+    "@tailwindcss/postcss": "^4",
+    "@testing-library/jest-dom": "7.0.1",
+    "@testing-library/react": "16.3.3",
+    "@testing-library/user-event": "14.6.8",
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/three": "0.187.0",
+    "@vitejs/plugin-react": "6.1.2",
+    "eslint": "^9",
+    "eslint-config-next": "16.4.3",
+    "jsdom": "26.1.0",
+    "openapi-typescript": "7.13.0",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "vitest": "5.0.5"
+  }
+}

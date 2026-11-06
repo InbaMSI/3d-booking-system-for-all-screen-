@@ -1,0 +1,16 @@
+{
+  "name": "cinema-booking-platform",
+  "private": true,
+  "workspaces": [
+    "apps/web"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace @cinema/web",
+    "build": "npm run build --workspace @cinema/web",
+    "lint": "npm run lint --workspace @cinema/web",
+    "typecheck": "npm run typecheck --workspace @cinema/web",
+    "test": "npm run test --workspace @cinema/web",
+    "e2e": "npm run e2e --workspace @cinema/web",
+    "api:types": "npm run api:types --workspace @cinema/web"
+  }
+}

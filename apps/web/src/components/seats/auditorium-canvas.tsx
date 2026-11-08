@@ -51,7 +51,7 @@ function AuditoriumCanvasInner(props: AuditoriumCanvasProps) {
           gl={{ antialias: true, powerPreference: "low-power" }}
           dpr={[1, 1.5]}
         >
-          <color attach="background" args={["#090d17"]} />
+          <color attach="background" args={["#15130f"]} />
           <ambientLight intensity={1.4} />
           <directionalLight intensity={2.2} position={[3, 8, 4]} />
           <Suspense fallback={null}>
@@ -90,7 +90,7 @@ function AuditoriumCanvasInner(props: AuditoriumCanvasProps) {
             />
           )}
         </Canvas>
-        <div className="canvas-label"><span className="canvas-live" /> PROCEDURAL 3D · 71 FT × 37.4 FT · 1.89:1</div>
+        <div className="canvas-label"><span className="canvas-live" /> PROCEDURAL 3D · 71 FT × 37.4 FT · 1.90:1</div>
         <div aria-label="Seat availability legend" className="auditorium-legend">
           <span><i className="legend-seat available" /> Available</span>
           <span><i className="legend-seat selected" /> Selected</span>
@@ -180,23 +180,23 @@ export function AuditoriumModel({
     <group>
       <mesh position={[0, -0.35, layout.floorCenterZ]} receiveShadow>
         <boxGeometry args={[layout.floorWidth, 0.5, layout.floorDepth]} />
-        <meshStandardMaterial color="#171c27" roughness={0.92} />
+        <meshStandardMaterial color="#24211b" roughness={0.92} />
       </mesh>
       {[-1, 1].map((side) => (
         <group key={`wall-${side}`} position={[side * (layout.floorWidth / 2 + 0.25), 0, layout.floorCenterZ]}>
           <mesh position={[0, layout.wallHeight / 2, 0]} receiveShadow>
             <boxGeometry args={[0.5, layout.wallHeight, layout.floorDepth]} />
-            <meshStandardMaterial color="#111723" roughness={0.88} />
+            <meshStandardMaterial color="#1d1b17" roughness={0.88} />
           </mesh>
           <mesh position={[-side * 0.24, 1.1, 0]}>
             <boxGeometry args={[0.06, 0.08, layout.floorDepth - 1]} />
-            <meshBasicMaterial color="#34313a" />
+            <meshBasicMaterial color="#4d4034" />
           </mesh>
         </group>
       ))}
       <mesh position={[0, layout.ceilingY, layout.floorCenterZ]} receiveShadow>
         <boxGeometry args={[layout.floorWidth, 0.35, layout.floorDepth]} />
-        <meshStandardMaterial color="#171820" roughness={0.82} />
+        <meshStandardMaterial color="#211f1a" roughness={0.82} />
       </mesh>
       {[-1, 1].flatMap((side) =>
         [-12, 0, 12].map((zOffset) => (
@@ -212,7 +212,7 @@ export function AuditoriumModel({
       {layout.rows.map(({ seats, centerZ, level, width }) => (
         <mesh key={`riser-${seats[0].row}`} position={[0, level - 0.16, centerZ]} receiveShadow>
           <boxGeometry args={[width, 0.32, 1.5]} />
-          <meshStandardMaterial color="#232a35" roughness={0.9} />
+          <meshStandardMaterial color="#302d26" roughness={0.9} />
         </mesh>
       ))}
       <ScreenMesh inventory={inventory} videoAspect={videoAspect} videoTexture={videoTexture} />
@@ -391,10 +391,10 @@ export const SeatMesh = memo(function SeatMesh({ seat, selected, onSelect, enabl
   const [hovered, setHovered] = useState(false);
   const unavailable = seat.availability !== "available" && !selected;
   const color = selected
-    ? "#e7b65f"
+    ? "#efa887"
     : unavailable
-      ? seat.availability === "held" ? "#8f7460" : "#4d5360"
-      : seat.category === "lounger" ? "#9a7958" : "#557081";
+      ? seat.availability === "held" ? "#a88b66" : "#514d47"
+      : seat.category === "lounger" ? "#9d805e" : "#7d7469";
   const lounger = seat.category === "lounger";
   useEffect(() => () => {
     gl.domElement.style.cursor = "grab";

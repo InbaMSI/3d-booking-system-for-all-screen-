@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { SRGBColorSpace, VideoTexture } from "three";
-import { useReducedMotion } from "@/lib/hooks/use-reduced-motion";
 
 interface TrailerPlayerProps {
   src: string | null;
@@ -13,12 +12,12 @@ export function TrailerPlayer({ src, onTextureChange }: TrailerPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const textureRef = useRef<VideoTexture | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [muted, setMuted] = useState(true);
+  const [muted, setMuted] = useState(false);
+  const [volumeLevel, setVolumeLevel] = useState(10);
   const [playback, setPlayback] = useState(0);
-  const [autoplayBlocked, setAutoplayBlocked] = useState(false);
+  const [autoplayBlocked, setAutoplayBlocked] = useState(true);
   const [mediaErrorSrc, setMediaErrorSrc] = useState<string | null>(null);
   const [buffering, setBuffering] = useState(false);
-  const reducedMotion = useReducedMotion();
   const mediaError = src !== null && mediaErrorSrc === src;
 
   useEffect(() => {
@@ -36,25 +35,18 @@ export function TrailerPlayer({ src, onTextureChange }: TrailerPlayerProps) {
     textureRef.current = texture;
     texture.colorSpace = SRGBColorSpace;
     onTextureChange(null, null);
-    if (!reducedMotion) {
-      void video.play().then(
-        () => setIsPlaying(true),
-        () => {
-          setIsPlaying(false);
-          setAutoplayBlocked(true);
-        },
-      );
-    }
+    video.muted = false;
+    video.volume = 1;
+    setAutoplayBlocked(true);
+    video.load();
 
     return () => {
       video.pause();
       texture.dispose();
-      video.removeAttribute("src");
-      video.load();
       textureRef.current = null;
       onTextureChange(null, null);
     };
-  }, [src, onTextureChange, reducedMotion]);
+  }, [src, onTextureChange]);
 
   return (
     <div className="trailer-controls">
@@ -62,9 +54,8 @@ export function TrailerPlayer({ src, onTextureChange }: TrailerPlayerProps) {
         <video
           aria-label="Movie trailer displayed on the auditorium screen"
           className="trailer-video"
-          crossOrigin="anonymous"
           loop
-          muted
+          muted={muted}
           onLoadedData={(event) => {
             const element = event.currentTarget;
             const texture = textureRef.current;
@@ -73,6 +64,7 @@ export function TrailerPlayer({ src, onTextureChange }: TrailerPlayerProps) {
             }
           }}
           onCanPlay={() => setBuffering(false)}
+          onLoadedMetadata={() => setBuffering(false)}
           onDurationChange={(event) => {
             const duration = event.currentTarget.duration;
             if (Number.isFinite(duration) && duration > 0) setPlayback((event.currentTarget.currentTime / duration) * 100);
@@ -82,13 +74,20 @@ export function TrailerPlayer({ src, onTextureChange }: TrailerPlayerProps) {
             setIsPlaying(false);
           }}
           onProgress={() => setBuffering(false)}
+          onPlaying={() => {
+            setBuffering(false);
+            setIsPlaying(true);
+            setAutoplayBlocked(false);
+          }}
+          onPause={() => setIsPlaying(false)}
+          onStalled={() => videoRef.current && !videoRef.current.paused && setBuffering(true)}
           onTimeUpdate={(event) => {
             const duration = event.currentTarget.duration;
             if (Number.isFinite(duration) && duration > 0) setPlayback((event.currentTarget.currentTime / duration) * 100);
           }}
           onWaiting={() => setBuffering(true)}
           playsInline
-          preload="metadata"
+          preload="auto"
           ref={videoRef}
           src={src}
         />
@@ -101,12 +100,15 @@ export function TrailerPlayer({ src, onTextureChange }: TrailerPlayerProps) {
         <>
           <button
             aria-label={isPlaying ? "Pause trailer" : "Play trailer"}
-            className={`icon-control play-control ${autoplayBlocked || reducedMotion ? "needs-play" : ""}`}
+            className={`icon-control play-control ${autoplayBlocked ? "needs-play" : ""}`}
             disabled={mediaError}
             onClick={() => {
               const element = videoRef.current;
               if (!element) return;
               if (element.paused) {
+                element.muted = volumeLevel === 0;
+                element.volume = volumeLevel / 10;
+                setMuted(volumeLevel === 0);
                 void element.play().then(
                   () => {
                     setIsPlaying(true);
@@ -124,7 +126,7 @@ export function TrailerPlayer({ src, onTextureChange }: TrailerPlayerProps) {
             }}
             type="button"
           >
-            {autoplayBlocked || reducedMotion ? "Play trailer  ▶" : isPlaying ? "Ⅱ" : "▶"}
+            {autoplayBlocked ? "Play with sound  ▶" : isPlaying ? "Ⅱ" : "▶"}
           </button>
           <label className="playback-progress">
             <span className="sr-only">Trailer progress</span>
@@ -142,20 +144,46 @@ export function TrailerPlayer({ src, onTextureChange }: TrailerPlayerProps) {
               value={playback}
             />
           </label>
+          <label className="volume-control">
+            <span>Volume {volumeLevel}</span>
+            <input
+              aria-label="Trailer volume"
+              max="10"
+              min="0"
+              onChange={(event) => {
+                const nextLevel = Number(event.currentTarget.value);
+                setVolumeLevel(nextLevel);
+                if (videoRef.current) {
+                  videoRef.current.volume = nextLevel / 10;
+                  const shouldMute = nextLevel === 0;
+                  setMuted(shouldMute);
+                  videoRef.current.muted = shouldMute;
+                }
+              }}
+              type="range"
+              value={volumeLevel}
+            />
+          </label>
           <button
             aria-label={muted ? "Unmute trailer" : "Mute trailer"}
             className="icon-control mute-control"
             onClick={() => {
               const nextMuted = !muted;
               setMuted(nextMuted);
-              if (videoRef.current) videoRef.current.muted = nextMuted;
+              if (videoRef.current) {
+                videoRef.current.muted = nextMuted;
+                if (!nextMuted && volumeLevel === 0) {
+                  setVolumeLevel(10);
+                  videoRef.current.volume = 1;
+                }
+              }
             }}
             type="button"
           >
             {muted ? "MUTE" : "SOUND ON"}
           </button>
           <span aria-live="polite" className="trailer-status">
-            {buffering ? "Buffering…" : autoplayBlocked || reducedMotion ? "Press play to start the trailer" : "Trailer"}
+            {buffering ? "Buffering…" : autoplayBlocked ? "Press Play with sound to start the trailer" : "Trailer playing with sound"}
           </span>
         </>
       )}

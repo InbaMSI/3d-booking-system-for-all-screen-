@@ -21,6 +21,12 @@ interface IdempotencyRow {
   response_payload: string;
 }
 
+const DEMO_SCREEN_VIDEO = "/Videos%20for%20movie/1000161237.mp4";
+
+function withScreenVideo(movie: Movie): Movie {
+  return { ...movie, trailerUrl: DEMO_SCREEN_VIDEO };
+}
+
 function seedDatabase(database: CinemaDatabase): void {
   const existing = database.prepare("SELECT COUNT(*) AS count FROM movies").get() as { count: number };
   if (existing.count > 0) return;
@@ -153,13 +159,13 @@ export class CinemaStore {
 
   listMovies(): Movie[] {
     return (this.database.prepare("SELECT payload FROM movies ORDER BY id").all() as Array<{ payload: string }>)
-      .map(({ payload }) => JSON.parse(payload) as Movie);
+      .map(({ payload }) => withScreenVideo(JSON.parse(payload) as Movie));
   }
 
   getMovie(movieId: string): Movie {
     const movie = getCatalogRow<Movie>(this.database, "movies", movieId);
     if (!movie) throw new ApiError("Movie not found.", "NOT_FOUND", 404);
-    return movie;
+    return withScreenVideo(movie);
   }
 
   listMovieShows(movieId: string): Showtime[] {

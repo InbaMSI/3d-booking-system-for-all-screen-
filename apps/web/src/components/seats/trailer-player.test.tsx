@@ -7,26 +7,32 @@ describe("TrailerPlayer", () => {
     vi.restoreAllMocks();
   });
 
-  it("shows a play fallback when muted autoplay is rejected and allows explicit playback", async () => {
-    const play = vi.spyOn(HTMLMediaElement.prototype, "play")
-      .mockRejectedValueOnce(new Error("autoplay denied"))
-      .mockResolvedValueOnce(undefined);
+  it("requires a sound-enabled user gesture before playback", async () => {
+    const play = vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue(undefined);
     render(<TrailerPlayer onTextureChange={vi.fn()} src="https://media.example.test/authorized-trailer.mp4" />);
-    await waitFor(() => expect(screen.getByText("Press play to start the trailer")).toBeInTheDocument());
-    expect(screen.getByRole("button", { name: "Play trailer" })).toBeInTheDocument();
+    const video = screen.getByLabelText("Movie trailer displayed on the auditorium screen") as HTMLVideoElement;
+    expect(video.muted).toBe(false);
+    expect(screen.getByText("Press Play with sound to start the trailer")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Play trailer" }));
     await waitFor(() => expect(screen.getByRole("button", { name: "Pause trailer" })).toBeInTheDocument());
-    expect(play).toHaveBeenCalledTimes(2);
+    expect(video.muted).toBe(false);
+    expect(play).toHaveBeenCalledTimes(1);
   });
 
-  it("starts muted and exposes a user-controlled mute toggle", async () => {
+  it("uses a 0-10 volume control and exposes a mute toggle", async () => {
     vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue(undefined);
     render(<TrailerPlayer onTextureChange={vi.fn()} src="https://media.example.test/authorized-trailer.mp4" />);
     const video = screen.getByLabelText("Movie trailer displayed on the auditorium screen") as HTMLVideoElement;
-    await waitFor(() => expect(video.muted).toBe(true));
+    const volume = screen.getByRole("slider", { name: "Trailer volume" });
+    await waitFor(() => expect(video.muted).toBe(false));
+    expect(volume).toHaveValue("10");
+    fireEvent.change(volume, { target: { value: "6" } });
+    expect(video.volume).toBeCloseTo(0.6);
+    expect(screen.getByText("Volume 6")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Mute trailer" }));
+    expect(video.muted).toBe(true);
     fireEvent.click(screen.getByRole("button", { name: "Unmute trailer" }));
     expect(video.muted).toBe(false);
-    expect(screen.getByRole("button", { name: "Mute trailer" })).toBeInTheDocument();
   });
 
   it("reports an unavailable trailer without creating a video element", () => {

@@ -10,7 +10,7 @@ export const movies: Movie[] = [
     rating: "UA 13+",
     genres: ["Sci-fi", "Adventure"],
     posterTone: "orbit",
-    trailerUrl: null,
+    trailerUrl: "/Videos%20for%20movie/1000161237.mp4",
   },
   {
     id: "afterglow",
@@ -21,7 +21,7 @@ export const movies: Movie[] = [
     rating: "U",
     genres: ["Drama", "Romance"],
     posterTone: "afterglow",
-    trailerUrl: null,
+    trailerUrl: "/Videos%20for%20movie/1000161237.mp4",
   },
   {
     id: "emberline",
@@ -32,7 +32,7 @@ export const movies: Movie[] = [
     rating: "UA 7+",
     genres: ["Drama"],
     posterTone: "emberline",
-    trailerUrl: null,
+    trailerUrl: "/Videos%20for%20movie/1000161237.mp4",
   },
 ];
 
